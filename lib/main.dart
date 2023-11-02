@@ -357,34 +357,48 @@ class WordLetters extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (int i = 0; i < word.length; i++)
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 5),
-                  width: 0,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(color: Colors.blueGrey),
-                    ),
-                  ),
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Text(
-                        word[i],
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+          children:
+              List.generate(word.length, (i) => WordLetter(word: word, i: i)),
+        ),
+      ),
+    );
+  }
+}
+
+class WordLetter extends StatelessWidget {
+  const WordLetter({
+    super.key,
+    required this.word,
+    required this.i,
+  });
+
+  final String word;
+  final int i;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        width: 0,
+        height: 40,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(color: Colors.blueGrey),
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              word[i],
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
