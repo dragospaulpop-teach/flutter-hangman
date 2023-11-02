@@ -17,6 +17,8 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   String word = '';
   String guessed = '';
   int wrongTries = 0;
@@ -24,6 +26,7 @@ class _MainAppState extends State<MainApp> {
   bool loading = false;
   List<String> hints = [];
   double wordLength = 15;
+  bool isPlaying = false;
 
   void getWord() async {
     setState(() {
@@ -48,6 +51,7 @@ class _MainAppState extends State<MainApp> {
           wrongTries = 0;
           guessed = ''.padRight(word.length, ' ');
           hints = [];
+          isPlaying = true;
         });
       } else {
         throw Exception('Failed to load word');
@@ -55,17 +59,18 @@ class _MainAppState extends State<MainApp> {
     } catch (e) {
       setState(() {
         loading = false;
+        isPlaying = false;
       });
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Error'),
+      ScaffoldMessenger.of(scaffoldKey.currentContext!).showSnackBar(
+        const SnackBar(
+          content: Text('Uff, there was an error obtaiing the word... Bummer!'),
         ),
       );
     }
   }
 
   void guessLetter(String letter) {
+    if (!isPlaying) return;
     if (word.contains(letter)) {
       int index = word.indexOf(letter);
 
@@ -93,7 +98,11 @@ class _MainAppState extends State<MainApp> {
     bool isWinner = isGuessed && wrongTries < maxTries;
 
     if (isLoser) {
-      guessed = word;
+      setState(() {
+        guessed = word;
+        isPlaying = false;
+      });
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -121,6 +130,10 @@ class _MainAppState extends State<MainApp> {
         ),
       );
     } else if (isWinner) {
+      setState(() {
+        isPlaying = false;
+      });
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -172,56 +185,72 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: Colors.grey[300],
       appBar: AppBar(
         title: const Text('Let\'s play a game!'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Container(
-          height: MediaQuery.of(context).size.height - 80.0,
-          color: Colors.grey[300],
-          padding: const EdgeInsets.all(20),
+          height: MediaQuery.of(context).size.height -
+              (MediaQuery.of(context).padding.top + kToolbarHeight),
+          padding: const EdgeInsets.all(6),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Image.network(
-                  'https://images.fineartamerica.com/images/artworkimages/medium/3/i-want-to-play-a-game-jigsaw-saw-movie-remake-posters-transparent.png',
-                  height: 200,
-                ),
-                const Text(
-                  'Push the button to get a random word and play hangman',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const Text(
-                  'I do hope you hang, you know?',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Image(
+                      image: AssetImage('assets/jigsaw.png'),
+                      height: 200,
+                    ),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          const Text(
+                            'Push the button to get a random word and play hangman',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            'I do hope you hang, you know?',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.red[900],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 Column(
                   children: [
                     const SizedBox(height: 6),
-                    const Text('Difficulty:'),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Difficulty: '),
+                        Text('Chars: ${wordLength.round().toString()}, '),
+                        Text('Tries: $maxTries'),
+                      ],
+                    ),
                     Slider(
                       value: wordLength,
                       max: 15,
                       min: 4,
                       onChanged: (double value) => setDifficulty(value),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Chars: ${wordLength.round().toString()}, '),
-                        Text('Tries: $maxTries'),
-                      ],
                     ),
                   ],
                 ),
@@ -234,26 +263,36 @@ class _MainAppState extends State<MainApp> {
                       icon: const Icon(Icons.touch_app),
                     ),
                     IconButton(
-                      onPressed: word.isEmpty ? null : () => provideHint(),
+                      onPressed: word.isEmpty || !isPlaying
+                          ? null
+                          : () => provideHint(),
                       icon: Icon(
                         Icons.help,
-                        color: word.isEmpty ? Colors.grey : Colors.green,
+                        color: word.isEmpty || !isPlaying
+                            ? Colors.grey
+                            : Colors.green,
                       ),
                     )
                   ],
+                ),
+                const SizedBox(
+                  height: 30,
                 ),
                 loading
                     ? const LinearProgressIndicator(
                         minHeight: 20,
                       )
                     : WordLetters(word: guessed),
+                const SizedBox(
+                  height: 30,
+                ),
                 word.isNotEmpty && !loading
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                            Image.network(
-                              'https://cdn-icons-png.flaticon.com/512/1142/1142172.png',
-                              height: 30,
+                            const Image(
+                              image: AssetImage('assets/alive.png'),
+                              height: 40,
                             ),
                             const SizedBox(
                               width: 10,
@@ -272,12 +311,15 @@ class _MainAppState extends State<MainApp> {
                             const SizedBox(
                               width: 10,
                             ),
-                            Image.network(
-                              'https://cdn-icons-png.flaticon.com/512/2230/2230897.png',
-                              height: 30,
-                            )
+                            const Image(
+                              image: AssetImage('assets/dead.png'),
+                              height: 40,
+                            ),
                           ])
                     : const Text(''),
+                const SizedBox(
+                  height: 20,
+                ),
                 word.isNotEmpty && !loading
                     ? KeyboardWidget(
                         guessLetter: guessLetter,
@@ -302,36 +344,49 @@ class WordLetters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (int i = 0; i < word.length; i++)
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              width: 0,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                border: const Border(
-                  bottom: BorderSide(color: Colors.black),
-                ),
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    word[i],
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.blueGrey,
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (int i = 0; i < word.length; i++)
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  width: 0,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Colors.blueGrey),
+                    ),
+                  ),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        word[i],
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -356,7 +411,7 @@ class KeyboardWidget extends StatelessWidget {
 class KeyboardRow extends StatefulWidget {
   final void Function(String letter) guessLetter;
 
-  final List<String> letters;
+  late final List<String> letters;
 
   KeyboardRow({
     Key? key,
@@ -383,14 +438,13 @@ class KeyboardRow extends StatefulWidget {
 }
 
 class _KeyboardRowState extends State<KeyboardRow> {
-  List<String> _letters = [];
+  final List<String> _pressedLetters = [];
 
   letterPressed(String letter) {
     widget.guessLetter(letter.toLowerCase());
-    _letters.add(letter);
 
     setState(() {
-      _letters = _letters;
+      _pressedLetters.add(letter);
     });
   }
 
@@ -410,14 +464,16 @@ class _KeyboardRowState extends State<KeyboardRow> {
                 width: keyWidth,
                 child: TextButton(
                   style: TextButton.styleFrom(
-                    backgroundColor: _letters.contains(letter)
+                    backgroundColor: _pressedLetters.contains(letter)
                         ? Colors.grey
                         : Colors.blueGrey,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  onPressed: () => letterPressed(letter),
+                  onPressed: _pressedLetters.contains(letter)
+                      ? null
+                      : () => letterPressed(letter),
                   child: Text(
                     letter,
                     style: const TextStyle(
