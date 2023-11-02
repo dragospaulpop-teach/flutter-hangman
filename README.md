@@ -32,4 +32,4 @@ Before running the app:
 
 To start the game:
 
-- Run `./run.sh` in the terminal.
+- Run the command from `./run.sh` in the terminal.
