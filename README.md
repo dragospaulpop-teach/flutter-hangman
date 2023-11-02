@@ -33,3 +33,4 @@ Before running the app:
 To start the game:
 
 - Run the command from `./run.sh` in the terminal.
+- After the build finished, go to ports, right clik on port 3000 and chose `open in browser`
