@@ -63,7 +63,8 @@ class _MainAppState extends State<MainApp> {
       });
       ScaffoldMessenger.of(scaffoldKey.currentContext!).showSnackBar(
         const SnackBar(
-          content: Text('Uff, there was an error obtaiing the word... Bummer!'),
+          content:
+              Text('Uff, there was an error obtaining the word... Bummer!'),
         ),
       );
     }
